@@ -23,10 +23,11 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # ======================== Dacon Dataset Load ==========================
 labels_df = pd.read_csv('C:/data/dacon_mnist2/dirty_mnist_2nd_answer.csv')[:]
-imgs_dir = np.array(sorted(glob.glob('C:/data/dacon_mnist2/train_clean/*')))[:]
+imgs_dir = np.array(sorted(glob.glob('C:/data/dacon_mnist2/dirty_mnist_2nd/*')))[:]
 labels = np.array(labels_df.values[:,1:])
 
-test_imgs_dir = np.array(sorted(glob.glob('C:/data/dacon_mnist2/test_clean/*')))
+test_imgs_dir = np.array(sorted(glob.glob('C:/data/dacon_mnist2/test_dirty_mnist_2nd/*')))
+
 
 imgs=[]
 for path in tqdm(imgs_dir[:]):
@@ -77,8 +78,18 @@ class MnistDataset_v2(Dataset):
                         sat_shift_limit=0.2,
                         val_shift_limit=0.2, 
                         p=0.5
-                    )
-                ], p=1.)
+                    ),
+                    albumentations.RandomBrightnessContrast(
+                        brightness_limit=(-0.1,0.1), 
+                        contrast_limit=(-0.1, 0.1), 
+                        p=0.5
+                    ),
+                    albumentations.Normalize(mean=[0.485, 0.456, 0.406], 
+                        std=[0.229, 0.224, 0.225], 
+                        max_pixel_value=255.0, 
+                        p=1.0
+                        )
+                ], p=1.) #색상(Hue), 채도(Saturation), 명도(Value)
         pass
     
     def __len__(self):
@@ -134,7 +145,7 @@ for train_idx, valid_idx in kf.split(imgs):
 ### seed_everything(42)
 
 # 5개의 fold 모두 실행하려면 for문을 5번 돌리면 됩니다.
-for fold in range(5):
+for fold in range(2):
     model = EfficientNet_MultiLabel(in_channels=3).to(device)
 # model = nn.DataParallel(model)
     train_idx = folds[fold][0]
@@ -150,7 +161,7 @@ for fold in range(5):
         ])
 
     epochs=25
-    batch_size=24        # 자신의 VRAM에 맞게 조절해야 OOM을 피할 수 있습니다.
+    batch_size=28        # 자신의 VRAM에 맞게 조절해야 OOM을 피할 수 있습니다.
     
     # Data Loader
     train_dataset = MnistDataset_v2(imgs = imgs[train_idx], labels=labels[train_idx], transform=train_transform)
@@ -216,7 +227,7 @@ for fold in range(5):
             valid_accuracy.append(np.mean(valid_batch_accuracy))
             
         if np.mean(valid_batch_accuracy)>valid_best_accuracy:
-            torch.save(model.state_dict(), 'C:/data/dacon_mnist2/model_mnist/EfficientNetB7-fold{}.pt'.format(fold))
+            torch.save(model.state_dict(), 'C:/data/dacon_mnist2/model_mnist/0227_EfficientNetB7-fold{}.pt'.format(fold))
             valid_best_accuracy = np.mean(valid_batch_accuracy)
         print('fold : {}\tepoch : {:02d}\ttrain_accuracy / loss : {:.5f} / {:.5f}\tvalid_accuracy / loss : {:.5f} / {:.5f}\ttime : {:.0f}'.format(fold+1, epoch+1,
                                                                                                                                               np.mean(batch_accuracy_list),
@@ -243,7 +254,7 @@ submission = pd.read_csv('C:/data/dacon_mnist2/sample_submission2.csv')
 with torch.no_grad():
     for fold in range(1):
         model = EfficientNet_MultiLabel(in_channels=3).to(device)
-        model.load_state_dict(torch.load('C:/data/dacon_mnist2/model_mnist/EfficientNetB3-fold{}.pt'.format(fold)))
+        model.load_state_dict(torch.load('C:/data/dacon_mnist2/model_mnist/EfficientNetB7-fold0.pt'.format(fold)))
         model.eval()
 
         test_dataset = MnistDataset_v2(imgs = test_imgs, transform=test_transform, train=False)
@@ -257,9 +268,8 @@ with torch.no_grad():
                 submission.iloc[n*32:(n+1)*32,1:] += pred_test
 
 # ==================== 제출물 생성 ====================
-submission.iloc[:,1:] = np.where(submission.values[:,1:]>=0.5, 1,0)
-submission.to_csv('C:/data/dacon_mnist2/anwsers/0225_2_base.csv', index=False)
-
+submission.iloc[:,1:] = np.where(submission.values[:,1:]>=2.5, 1,0)
+submission.to_csv('C:/data/dacon_mnist2/anwsers/0301_base.csv', index=False)
 
 
 
