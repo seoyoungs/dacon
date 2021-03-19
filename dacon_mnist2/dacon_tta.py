@@ -122,7 +122,7 @@ class EfficientNet_MultiLabel(nn.Module):
         x = F.relu(self.network(x))
         x = torch.sigmoid(self.output_layer(x))
         return x
-'''
+
 # ============== 데이터 분리====================================
 # 해당 코드에서는 1fold만 실행
 
@@ -224,7 +224,7 @@ for fold in range(5):
                                                                                                                                               np.mean(valid_batch_accuracy), 
                                                                                                                                               np.mean(valid_batch_loss),
                                                                                                                                               time.time()-start))
-'''
+
 # ===================== Test Image 로드 ==========================
 test_imgs=[]
 for path in tqdm(test_imgs_dir):
