@@ -1,4 +1,3 @@
-# https://www.kaggle.com/phsaikiran/the-simpsons-characters-classification
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -11,29 +10,24 @@ from keras.layers import *
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.optimizers import Adam,SGD
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.applications import EfficientNetB7
+from tensorflow.keras.applications import EfficientNetB4
 from tensorflow.keras.applications.efficientnet import preprocess_input
-from tensorflow.keras.models import Sequential, load_model
+from tqdm import tqdm
 
 #데이터 지정 및 전처리
 x = np.load("C:/data/npy/lotte_x.npy",allow_pickle=True)
 x_pred = np.load('C:/data/npy/lotte_pred.npy',allow_pickle=True)
 y = np.load("C:/data/npy/lotte_y.npy",allow_pickle=True)
-# y1 = np.zeros((len(y), len(y.unique())))
-# for i, digit in enumerate(y):
-#     y1[i, digit] = 1
 
-x = preprocess_input(x) # (48000, 255, 255, 3)
-x_pred = preprocess_input(x_pred)   # 
+x = preprocess_input(x) 
+x_pred = preprocess_input(x_pred) 
 
 idg = ImageDataGenerator(
     # rotation_range=10, acc 하락
     width_shift_range=(-1,1),   # 0.1 => acc 하락
     height_shift_range=(-1,1),  # 0.1 => acc 하락
     # rotation_range=40, acc 하락 
-    shear_range=0.2)    # 현상유지
-    # zoom_range=0.2, acc 하락
-    # horizontal_flip=True)
+    shear_range=0.2)
 
 idg2 = ImageDataGenerator()
 
@@ -55,37 +49,20 @@ idg2 = ImageDataGenerator()
 y = np.argmax(y, axis=1)
 
 from sklearn.model_selection import train_test_split
-x_train, x_valid, y_train, y_valid = train_test_split(x,y, train_size = 0.75, shuffle = True, random_state=42)
+x_train, x_valid, y_train, y_valid = train_test_split(x,y, train_size = 0.8, shuffle = True, random_state=66)
 
-mc = ModelCheckpoint('C:/data/h5/lotte_0317_3.h5',save_best_only=True, verbose=1)
 
 train_generator = idg.flow(x_train,y_train,batch_size=32)
 # seed => random_state
 valid_generator = idg2.flow(x_valid,y_valid)
 test_generator = x_pred
 
-from tensorflow.keras.models import Model
+mc = ModelCheckpoint('C:/data/h5/lotte_0318_2.h5',save_best_only=True, verbose=1)
+
+from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import GlobalAveragePooling2D, Flatten, BatchNormalization, Dense, Activation
 from tensorflow.keras.applications import VGG19, MobileNet
-
-'''
-efficientnetb7 = EfficientNetB7(include_top=False,weights='imagenet',input_shape=x_train.shape[1:])
-efficientnetb7.trainable = False
-a = efficientnetb7.output
-a = GlobalAveragePooling2D() (a)
-a = Flatten() (a)
-a = Dense(64) (a)
-a = BatchNormalization() (a)
-a = Activation('relu') (a)
-a = Dense(128) (a)
-a = BatchNormalization() (a)
-a = Activation('relu') (a)
-a = Dense(1000, activation= 'softmax') (a)
-
-model = Model(inputs = efficientnetb7.input, outputs = a)
-model.compile(loss='sparse_categorical_crossentropy', optimizer=Adam(lr=1e-5,epsilon=None),
-                metrics=['acc'])
-'''
+"""
 mobile_net = MobileNet(weights="imagenet", include_top=False, input_shape=(128, 128, 3))
 
 # for layer in mobile_net.layers:
@@ -95,15 +72,15 @@ top_model = mobile_net.output
 top_model = GlobalAveragePooling2D()(top_model)
 top_model = Flatten()(top_model)
 top_model = Dense(1024, activation="relu")(top_model)
-top_model = Dense(1024, activation="relu")(top_model)
-top_model = Dense(512, activation="relu")(top_model)
+# top_model = Dense(1024, activation="relu")(top_model)
+# top_model = Dense(512, activation="relu")(top_model)
 top_model = Dense(1000, activation="softmax")(top_model)
     
 model = Model(inputs=mobile_net.input, outputs = top_model)
 
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 early_stopping = EarlyStopping(patience= 20)
-lr = ReduceLROnPlateau(patience= 15, factor=0.5)
+lr = ReduceLROnPlateau(patience= 10, factor=0.5)
 
 model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-5), 
                 loss = 'sparse_categorical_crossentropy', metrics=['accuracy'])
@@ -111,19 +88,38 @@ model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-5),
 learning_history = model.fit_generator(train_generator,epochs=200, 
     validation_data=valid_generator, callbacks=[early_stopping,lr,mc])
 
+"""
+'''
 # predict
-# model = load_model('C:/data/h5/lotte_0317_2.h5')
-model.load_weights('C:/data/h5/lotte_0317_3.h5')
+# model.load_weights('C:/data/h5/lotte_0318_2.h5')
+#result = model.predict(x_pred,verbose=True)
+model = load_model('C:/data/h5/lotte_0318_2.h5')
+# model.load_weights('C:/data/h5/lotte_0318_2.h5')
 result = model.predict(test_generator,verbose=True)
 
 print(result.shape)
 sub = pd.read_csv('C:/data/LPD_competition/sample.csv')
 sub['prediction'] = np.argmax(result,axis = 1)
-sub.to_csv('C:/data/csv/lotte0317_3.csv',index=False)
+sub.to_csv('C:/data/csv/lotte0318_2_3.csv',index=False)
+'''
 
+# predict
+model = load_model('C:/data/h5/lotte_0318_2.h5')
+# model.load_weights('C:/data/h5/lotte_0318_2.h5')
+result = model.predict(x_pred,verbose=True)
 
+tta_steps = 50
+predictions = []
 
+for i in tqdm(range(tta_steps)):
+    preds = model.predict_generator(x_pred,verbose=True)
+    predictions.append(preds)
 
+final_pred = np.mean(predictions, axis=0)
+
+sub = pd.read_csv('C:/data/LPD_competition/sample.csv')
+sub['prediction'] = np.argmax(final_pred,axis = 1)
+sub.to_csv('C:/data/csv/lotte0318_2_3.csv',index=False)
 
 
 

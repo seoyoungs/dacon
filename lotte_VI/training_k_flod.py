@@ -92,7 +92,6 @@ i = 0
 val_loss_min = []
 val_acc_max = []
 
-
 for train, valid in skf.split(x,y):
     i += 1
     x_train = x[train]
@@ -100,14 +99,13 @@ for train, valid in skf.split(x,y):
     y_train = y[train]
     y_valid = y[valid]
 
-    #x_train, x_valid, y_train, y_valid = train_test_split(x,y, train_size = 0.8, shuffle = True, random_state=42)
-
     train_generator = idg.flow(x_train,y_train,batch_size=128)
     # seed => random_state
     valid_generator = idg2.flow(x_valid,y_valid)
     test_generator = x_pred
 
-    mobile = EfficientNetB2(include_top=False,weights='imagenet',input_shape=x_train.shape[1:])
+    mobile = EfficientNetB2(include_top=False,weights='imagenet',
+                             input_shape=x_train.shape[1:])
     mobile.trainable = True
     a = mobile.output
     a = GlobalAveragePooling2D() (a)

@@ -11,7 +11,7 @@ from keras.layers import *
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from keras.optimizers import Adam,SGD
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.applications import EfficientNetB7
+from tensorflow.keras.applications import EfficientNetB7, ResNet50, ResNet101
 from tensorflow.keras.applications.efficientnet import preprocess_input
 from tensorflow.keras.models import Sequential, load_model
 
@@ -55,15 +55,16 @@ idg2 = ImageDataGenerator()
 y = np.argmax(y, axis=1)
 
 from sklearn.model_selection import train_test_split
-x_train, x_valid, y_train, y_valid = train_test_split(x,y, train_size = 0.75, shuffle = True, random_state=42)
+x_train, x_valid, y_train, y_valid = train_test_split(x,y, train_size = 0.8, shuffle = True, random_state=42)
 
-mc = ModelCheckpoint('C:/data/h5/lotte_0317_3.h5',save_best_only=True, verbose=1)
+# mc = ModelCheckpoint('C:/data/h5/lotte_0318_1.h5',save_best_only=True, verbose=1)
 
 train_generator = idg.flow(x_train,y_train,batch_size=32)
 # seed => random_state
 valid_generator = idg2.flow(x_valid,y_valid)
 test_generator = x_pred
 
+"""
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import GlobalAveragePooling2D, Flatten, BatchNormalization, Dense, Activation
 from tensorflow.keras.applications import VGG19, MobileNet
@@ -86,44 +87,51 @@ model = Model(inputs = efficientnetb7.input, outputs = a)
 model.compile(loss='sparse_categorical_crossentropy', optimizer=Adam(lr=1e-5,epsilon=None),
                 metrics=['acc'])
 '''
-mobile_net = MobileNet(weights="imagenet", include_top=False, input_shape=(128, 128, 3))
 
+    
+model = Sequential()
+model.add(ResNet101(include_top = False, pooling = 'avg', weights='imagenet', input_shape=(128, 128, 3)))
+model.add(Flatten())
+model.add(Dense(1024, activation="relu"))
+# top_model = Dense(1024, activation="relu")(top_model)
+# top_model = Dense(512, activation="relu")(top_model)
+model.add(Dense(1000, activation ='softmax'))
+
+
+
+
+'''
+mobile_net = MobileNet(weights="imagenet", include_top=False, input_shape=(128, 128, 3))
 # for layer in mobile_net.layers:
 # layer.trainable = False
-    
 top_model = mobile_net.output
 top_model = GlobalAveragePooling2D()(top_model)
 top_model = Flatten()(top_model)
 top_model = Dense(1024, activation="relu")(top_model)
-top_model = Dense(1024, activation="relu")(top_model)
-top_model = Dense(512, activation="relu")(top_model)
+# top_model = Dense(1024, activation="relu")(top_model)
+# top_model = Dense(512, activation="relu")(top_model)
 top_model = Dense(1000, activation="softmax")(top_model)
     
 model = Model(inputs=mobile_net.input, outputs = top_model)
+'''
 
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 early_stopping = EarlyStopping(patience= 20)
-lr = ReduceLROnPlateau(patience= 15, factor=0.5)
+lr = ReduceLROnPlateau(patience= 10, factor=0.5)
 
 model.compile(optimizer=tf.keras.optimizers.Adam(lr=1e-5), 
                 loss = 'sparse_categorical_crossentropy', metrics=['accuracy'])
 
 learning_history = model.fit_generator(train_generator,epochs=200, 
     validation_data=valid_generator, callbacks=[early_stopping,lr,mc])
-
+"""
 # predict
-# model = load_model('C:/data/h5/lotte_0317_2.h5')
-model.load_weights('C:/data/h5/lotte_0317_3.h5')
+model = load_model('C:/data/h5/lotte_0317_4.h5')
+# model.load_weights('C:/data/h5/lotte_0318_1.h5')
 result = model.predict(test_generator,verbose=True)
 
 print(result.shape)
 sub = pd.read_csv('C:/data/LPD_competition/sample.csv')
 sub['prediction'] = np.argmax(result,axis = 1)
-sub.to_csv('C:/data/csv/lotte0317_3.csv',index=False)
-
-
-
-
-
-
+sub.to_csv('C:/data/csv/lotte0317_5.csv',index=False)
 
