@@ -39,7 +39,7 @@ df = pd.DataFrame(dataset, columns=column_name)
 db.connect.commit()
 
 # train, test 나누기
-train_value = df[ '2020-09-01' >= df['date'] ]
+train_value = df[ '2020-09-01' > df['date'] ]
 
 x_train = train_value.iloc[:,1:-1].astype('int64').to_numpy()
 y_train = train_value.iloc[:,-1].astype('int64').to_numpy()
