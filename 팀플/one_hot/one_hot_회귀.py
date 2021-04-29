@@ -61,7 +61,7 @@ x_pred = x_pred.reshape(x_pred.shape[0], x_pred.shape[1],1)
 def RMSE(y_test, y_predict): 
     return np.sqrt(mean_squared_error(y_test, y_predict)) 
 
-kfold = KFold(n_splits=3, shuffle=True)
+kfold = KFold(n_splits=2, shuffle=True)
 
 start_time = timeit.default_timer()
 
@@ -80,31 +80,31 @@ for train_index, test_index in kfold.split(x_train):
     x_train1 = x_train1.reshape(x_train1.shape[0], x_train1.shape[1], 1)
     x_test1 = x_test1.reshape(x_test1.shape[0], x_test1.shape[1],1)
 
-    x_train1, x_val, y_train1, y_val = train_test_split(x_train1, y_train1,  train_size=0.9, random_state = 77, shuffle=False ) 
+    x_train1, x_val, y_train1, y_val = train_test_split(x_train1, y_train1,  train_size=0.8, random_state = 77, shuffle=False ) 
 
     # 2. 모델구성
 
     model = Sequential()
-    model.add(LSTM(1024, activation=leaky_relu, 
+    model.add(LSTM(1024, activation='tanh', 
                input_shape= (6,1), unroll=False)) 
-    model.add(Dense(512,activation=leaky_relu))
+    model.add(Dense(512,activation='tanh'))
     model.add(Flatten())
-    model.add(Dense(512, activation=leaky_relu))
+    model.add(Dense(512, activation='tanh'))
     model.add(Dense(1)) 
 
     # 3. 컴파일 훈련
 
-    modelpath = '../data/h5/one_hot_reg_1'+str(num)+'.hdf5'
+    # modelpath = '../data/h5/one_hot_reg_1'+str(num)+'.hdf5'
     es= EarlyStopping(monitor='val_loss', patience=10)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', patience=5, factor=0.5, verbose=1)
-    cp =ModelCheckpoint(filepath=modelpath, monitor='val_loss', save_best_only=True, mode='auto')
-
-    model.compile(loss='mse', optimizer='AdaDelta', metrics='mae')
-    model.fit(x_train1, y_train1, epochs=50, batch_size=128, validation_data=(x_val,y_val), callbacks=[es,reduce_lr,cp] )
+    # cp = ModelCheckpoint(filepath=modelpath, monitor='val_loss', save_best_only=True, mode='auto')
+    cp = ModelCheckpoint('../data/h5/one_hot_reg_1_'+str(num)+'.hdf5', monitor='val_loss', save_best_only=True, verbose=1,mode='auto')
+    model.compile(loss='mse', optimizer='adam', metrics='mae')
+    model.fit(x_train1, y_train1, epochs=25, batch_size=156, validation_data=(x_val,y_val), callbacks=[es,reduce_lr,cp] )
 
     # 4. 평가, 예측
 
-    loss, mae = model.evaluate(x_test1, y_test1, batch_size=64)
+    loss, mae = model.evaluate(x_test1, y_test1, batch_size=156)
     y_predict = model.predict(x_pred)
 
     print(loss)
@@ -130,6 +130,12 @@ print("loss : ",loss_list)
 terminate_time = timeit.default_timer() # 종료 시간 체크  
 print("%f초 걸렸습니다." % (terminate_time - start_time))
 
+'''
+leaky_relu
+adadelta
+RMSE :  0.09668588646694727
+R2 :  0.7845471547295564
+'''
 
 
 
