@@ -98,8 +98,8 @@ for train_index, test_index in kfold.split(x_train):
     es= EarlyStopping(monitor='val_loss', patience=10)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', patience=5, factor=0.5, verbose=1)
     # cp = ModelCheckpoint(filepath=modelpath, monitor='val_loss', save_best_only=True, mode='auto')
-    cp = ModelCheckpoint('../data/h5/one_hot_reg_1_'+str(num)+'.hdf5', monitor='val_loss', save_best_only=True, verbose=1,mode='auto')
-    model.compile(loss='mse', optimizer='adam', metrics='mae')
+    cp = ModelCheckpoint('../data/h5/one_hot_reg_2_'+str(num)+'.hdf5', monitor='val_loss', save_best_only=True, verbose=1,mode='auto')
+    model.compile(loss='mse', optimizer='rmsprop', metrics='mae')
     model.fit(x_train1, y_train1, epochs=25, batch_size=156, validation_data=(x_val,y_val), callbacks=[es,reduce_lr,cp] )
 
     # 4. 평가, 예측
@@ -135,6 +135,23 @@ leaky_relu
 adadelta
 RMSE :  0.09668588646694727
 R2 :  0.7845471547295564
+
+tanh
+adam
+RMSE :  0.015004378930168257
+R2 :  0.9948112575549163
+LSTM 윈도우 없음
+r2 :  [0.9992032120682073, 0.9948112575549163]
+RMSE :  [0.0058797429540654676, 0.015004378930168257]
+loss :  [3.457082493696362e-05, 1.8847807950805873e-05]
+6286.357138초 걸렸습니다.
+
+tanh
+rmsprop
+r2 :  [0.9999155456155073, 0.9974719138580153]
+RMSE :  [0.0019142474053310138, 0.0104732844885775]
+loss :  [3.8070502341724932e-06, 8.74176748766331e-06]
+6549.471142초 걸렸습니다.
 '''
 
 
