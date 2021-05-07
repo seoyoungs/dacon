@@ -1,4 +1,4 @@
-# dacon
+# LOTTE Computer Vision Competition Winner
 
 ![0001](https://user-images.githubusercontent.com/76426566/117411415-7cbcf400-af4e-11eb-80e8-ef1156627bbe.jpg)
 ![0002](https://user-images.githubusercontent.com/76426566/117411411-7cbcf400-af4e-11eb-890c-2cd891c8af7f.jpg)
