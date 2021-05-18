@@ -61,11 +61,9 @@ x_pred = x_pred.reshape(x_pred.shape[0], 7,1,3)
 def RMSE(y_test, y_predict): 
     return np.sqrt(mean_squared_error(y_test, y_predict)) 
 
-
 x_train, x_val, y_train, y_val = train_test_split(x_train, y_train,  train_size=0.8, random_state = 77, shuffle=True ) 
 x_train = x_train.reshape(x_train.shape[0], 7, 1, 3)
 print(x_train.shape, x_val.shape, x_pred.shape)
-
 
 # 2. 모델구성
 leaky_relu = tf.nn.leaky_relu
@@ -88,15 +86,12 @@ reduce_lr = ReduceLROnPlateau(monitor='val_loss', patience=5, factor=0.5, verbos
 model.compile(loss='mse', optimizer='adam', metrics='mae')
 model.fit(x_train, y_train, epochs=20, batch_size=64, validation_data=(x_val,y_val), callbacks=[reduce_lr] )
 
-
 es= EarlyStopping(monitor='val_loss', patience=10)
 reduce_lr = ReduceLROnPlateau(monitor='val_loss', patience=5, factor=0.5, verbose=1)
 # cp = ModelCheckpoint(filepath=modelpath, monitor='val_loss', save_best_only=True, mode='auto')
 cp = ModelCheckpoint('../data/h5/vgg16__dense_1.hdf5', monitor='val_loss', save_best_only=True, verbose=1,mode='auto')
 model.compile(loss='mse', optimizer='adam', metrics='mae')
 model.fit(x_train, y_train, epochs=50, batch_size=128, validation_data=(x_val,y_val), callbacks=[es,reduce_lr,cp] )
-
-
 
 # 4. 평가, 예측
 
@@ -109,4 +104,7 @@ print("RMSE : ", RMSE(y_pred, y_predict))
 # R2 만드는 법
 r2 = r2_score(y_pred, y_predict)
 print("R2 : ", r2)
+
+
+
 

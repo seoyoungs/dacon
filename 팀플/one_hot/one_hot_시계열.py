@@ -51,6 +51,18 @@ def callbacks(modelpath):
 def build_model(acti, opti, lr):   
 
     # 2. 모델구성
+
+    inputs = Input(shape = (x_train1.shape[1],1),name = 'input')
+    x = LSTM(1024)(inputs)
+    x = Activation(acti)(x)
+    x = Dense(512)(x)
+    x = Activation(acti)(x)
+    x = Dense(512)(x)
+    x = Activation(acti)(x)
+    outputs = Dense(2688)(x)
+    model = Model(inputs=inputs,outputs=outputs)
+
+    '''
     inputs = Input(shape = (x_train1.shape[1],),name = 'input')
     x = Dense(1024)(inputs)
     x = Activation(acti)(x)
@@ -61,6 +73,7 @@ def build_model(acti, opti, lr):
     # x = Reshape((x_train1.shape[1],x_train1.shape[2]))(x)
     outputs = Dense(2688)(x)
     model = Model(inputs=inputs,outputs=outputs)
+    '''
 
     # 3. 컴파일 훈련        
     model.compile(loss='mse', optimizer = opti(learning_rate=lr), metrics='mae')
@@ -136,13 +149,13 @@ for main_num in range(1):
     # print(x_pred.shape, y_pred.shape)     #(8, 2688, 6) (8, 2688)
 
 
-    acti_list = ['swish', 'elu', 'relu', 'selu','tanh']
-    opti_list = [RMSprop, Nadam, Adam, Adadelta, Adamax, Adagrad, SGD]
-    acti = acti_list[4]
+    acti_list = ['swish', 'relu', 'selu','tanh']
+    opti_list = [RMSprop, Adam, Adadelta, Adagrad] #Nadam Adamax SGD
+    acti = acti_list[3]
     opti = opti_list[0]
-    batch = 80
+    batch = 64
     lrr = 0.01
-    epo = 1000
+    epo = 30
     for acti in acti_list:
         num = 0 
         for train_index, test_index in kfold.split(x_train):             
@@ -150,11 +163,14 @@ for main_num in range(1):
             x_train1, x_test1 = x_train[train_index], x_train[test_index]
             y_train1, y_test1 = y_train[train_index], y_train[test_index]
             
-            x_train1, x_val, y_train1, y_val = train_test_split(x_train1, y_train1,  train_size=0.9, random_state = 77, shuffle=True ) 
+            x_train1, x_val, y_train1, y_val = train_test_split(x_train1, y_train1,  train_size=0.8, random_state = 77, shuffle=True ) 
 
-            x_train1 = x_train1.reshape(x_train1.shape[0], -1)
+            # x_train1 = x_train1.reshape(x_train1.shape[0], -1)
             x_val = x_val.reshape(x_val.shape[0], -1)
-            x_pred = x_pred.reshape(x_pred.shape[0], -1)
+            # x_pred = x_pred.reshape(x_pred.shape[0], -1)
+            x_train1 = x_train1.reshape(x_train1.shape[0], -1, 1)
+            x_test1 = x_test1.reshape(x_test1.shape[0], -1, 1)
+            x_pred = x_pred.reshape(x_pred.shape[0], -1,1)
 
             print(x_train1.shape)
             print(y_train1.shape)
